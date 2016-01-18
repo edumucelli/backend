@@ -20,6 +20,9 @@ class Rental
 	SECOND_RANGE_LOWER_INTERVAL = 4
 	THIRD_RANGE_LOWER_INTERVAL = 10
 
+	ASSISTANCE_FEE_COST_PER_DAY = 100
+	DEDUCTIBLE_REDUCTION_COST_PER_DAY = 400
+
 	attr_accessor :start_date, :end_date, :distance
 	def initialize(car, start_date, end_date, distance, options = {})
 		@car = car
@@ -93,7 +96,7 @@ class Rental
 
 	def calculate_deductible_reduction
 		number_of_days = calculate_number_of_days
-		@options['deductible_reduction'] ? number_of_days * 400 : 0
+		@options['deductible_reduction'] ? number_of_days * DEDUCTIBLE_REDUCTION_COST : 0
 	end
 end
 
@@ -149,14 +152,10 @@ def read_rentals
 	rentals
 end
 
-# I've supposed that rentals and their modifications are not contemporary,
-# i.e., first rentals are done, then users change their minds, and update
-# their rentals using Drivy. Therefore, a new method (that kind of repeat)
-# the data read was created, just to simulate that rental and their modications
-# are not introduced into the system at the same time.
-# Here a modifications' hash is created, just to, later on, map the
-# modifications to the rentals (simulate primary-key) in constant time (O(1)),
-# instead of iterating on it (worst O(N)).
+# Just to simulate that rental and their modications are not introduced
+# into the system at the same time. Here a modifications' hash is created,
+# just to, later on, map the modifications to the rentals (simulate primary-key)
+# in constant time (O(1)), instead of iterating on it (worst O(N)).
 def read_rental_modifications
 	data_file_name = "data.json"
 	data = JSON.parse(File.read(data_file_name))

@@ -20,6 +20,8 @@ class Rental
 	SECOND_RANGE_LOWER_INTERVAL = 4
 	THIRD_RANGE_LOWER_INTERVAL = 10
 
+	ASSISTANCE_FEE_COST_PER_DAY = 100
+
 	def initialize(car, start_date, end_date, distance)
 		@car = car
 		@start_date = start_date
@@ -70,7 +72,7 @@ class Rental
 
 	def calculate_assistance_fee
 		number_of_days = calculate_number_of_days
-		number_of_days * 100
+		number_of_days * ASSISTANCE_FEE_COST_PER_DAY
 	end
 
 	def calculate_drivy_fee

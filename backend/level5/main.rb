@@ -19,6 +19,9 @@ class Rental
 	FIRST_RANGE_LOWER_INTERVAL = 1
 	SECOND_RANGE_LOWER_INTERVAL = 4
 	THIRD_RANGE_LOWER_INTERVAL = 10
+
+	ASSISTANCE_FEE_COST_PER_DAY = 100
+	DEDUCTIBLE_REDUCTION_COST_PER_DAY = 400
 	
 	def initialize(car, start_date, end_date, distance, options = {})
 		@car = car
@@ -73,7 +76,7 @@ class Rental
 
 	def calculate_assistance_fee
 		number_of_days = calculate_number_of_days
-		number_of_days * 100
+		number_of_days * ASSISTANCE_FEE_COST_PER_DAY
 	end
 
 	def calculate_drivy_fee
@@ -92,7 +95,7 @@ class Rental
 
 	def calculate_deductible_reduction
 		number_of_days = calculate_number_of_days
-		@options['deductible_reduction'] ? number_of_days * 400 : 0
+		@options['deductible_reduction'] ? number_of_days * DEDUCTIBLE_REDUCTION_COST_PER_DAY : 0
 	end
 end
 
