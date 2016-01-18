@@ -84,6 +84,13 @@ class Rental
 		commission - (insurance_fee + assistance_fee)
 	end
 
+	def calculate_fees
+		insurance_fee = calculate_insurance_fee
+		assistance_fee = calculate_assistance_fee
+		drivy_fee = calculate_drivy_fee
+		return insurance_fee, assistance_fee, drivy_fee
+	end
+
 	def calculate_deductible_reduction
 		number_of_days = calculate_number_of_days
 		@options['deductible_reduction'] ? number_of_days * 400 : 0
@@ -91,10 +98,11 @@ class Rental
 end
 
 class Action
-	attr_accessor :amount, :type
-	attr_reader :actor
-	def initialize(actor)
+	attr_reader :actor, :amount, :type
+	def initialize(actor, amount)
 		@actor = actor
+		@type = amount > 0 ? 'debit' : 'credit'
+		@amount = amount < 0 ? amount.abs : amount 
 	end
 end
 
@@ -167,88 +175,36 @@ def level_6
 	rentals = read_rentals
 	read_rental_modifications.each_pair do |rid, modification|
 		rental = rentals[rid]
+
 		original_price = rental.calculate_price
+		original_insurance_fee, original_assistance_fee, original_drivy_fee = rental.calculate_fees
 		original_commission = rental.calculate_commission
-		original_insurance_fee = rental.calculate_insurance_fee
-		original_assistance_fee = rental.calculate_assistance_fee
-		original_drivy_fee = rental.calculate_drivy_fee
 		original_deductible_reduction = rental.calculate_deductible_reduction
 
 		modified_rental = rental.clone
-		if modification.has_key?('start_date')
-			modified_rental.start_date = Date.strptime(modification.fetch('start_date'), '%Y-%m-%d')
-		end
-		if modification.has_key?('end_date')
-			modified_rental.end_date = Date.strptime(modification.fetch('end_date'), '%Y-%m-%d')
-		end
-		if modification.has_key?('distance')
-			modified_rental.distance = modification.fetch('distance')
-		end
+		modified_rental.start_date = Date.strptime(modification.fetch('start_date'), '%Y-%m-%d') if modification.has_key?('start_date')
+		modified_rental.end_date = Date.strptime(modification.fetch('end_date'), '%Y-%m-%d') if modification.has_key?('end_date')
+		modified_rental.distance = modification.fetch('distance') if modification.has_key?('distance')
+
 		modified_price = modified_rental.calculate_price
 		modified_commission = modified_rental.calculate_commission
-		modified_insurance_fee = modified_rental.calculate_insurance_fee
-		modified_assistance_fee = modified_rental.calculate_assistance_fee
-		modified_drivy_fee = modified_rental.calculate_drivy_fee
+		modified_insurance_fee, modified_assistance_fee, modified_drivy_fee = modified_rental.calculate_fees
 		modified_deductible_reduction = modified_rental.calculate_deductible_reduction
 
-		# Disclaimer: if the original and modified actions had the same amount, my
-		# code will credit 0. I have not seen an example of this case in the output, thus
-		# I consider that all actors must appear in the output, even when 'nothing' needs
-		# to be done. However, that'd be simple to ignore actions when the difference is 0
+		driver_fee_diff = (modified_price + modified_deductible_reduction) - (original_price + original_deductible_reduction)
+		driver_action = Action.new('driver', driver_fee_diff)
 
-		driver_action = Action.new('driver')
-		driver_fee_diff = (original_price + original_deductible_reduction) - (modified_price + modified_deductible_reduction)
-		# Driver paid more for the original rental than for the modified one, credit him
-		if driver_fee_diff > 0
-			driver_action.type = 'credit'
-			driver_action.amount = driver_fee_diff
-		else
-			driver_action.type = 'debit'
-			driver_action.amount = driver_fee_diff.abs
-		end
-
-		owner_action = Action.new('owner')
 		owner_fee_diff = (original_price - original_commission) - (modified_price - modified_commission)
-		# Owner received more for the the original rental than for the modified one, debit him
-		if owner_fee_diff > 0
-			owner_action.type = 'debit'
-			owner_action.amount = owner_fee_diff
-		else
-			owner_action.type = 'credit'
-			owner_action.amount = owner_fee_diff.abs
-		end
+		owner_action = Action.new('owner', owner_fee_diff)
 
-		insurance_action = Action.new('insurance')
 		insurance_fee_diff = original_insurance_fee - modified_insurance_fee
-		# Insurance received more for the original rental than for the modified one, debit it
-		if insurance_fee_diff > 0
-			insurance_action.type = 'debit'
-			insurance_action.amount = insurance_fee_diff
-		else
-			insurance_action.type = 'credit'
-			insurance_action.amount = insurance_fee_diff.abs
-		end
+		insurance_action = Action.new('insurance', insurance_fee_diff)
 
-		assistance_action = Action.new('assistance')
 		assistance_fee_diff = original_assistance_fee - modified_assistance_fee
-		# Assistance received more for the original rental than for the modified one, debit it
-		if assistance_fee_diff > 0
-			assistance_action.type = 'debit'
-			assistance_action.amount = assistance_fee_diff
-		else
-			assistance_action.type = 'credit'
-			assistance_action.amount = assistance_fee_diff.abs
-		end
+		assistance_action = Action.new('assistance', assistance_fee_diff)
 
-		drivy_action = Action.new('drivy')
 		drivy_fee_diff = (original_drivy_fee + original_deductible_reduction) - (modified_drivy_fee + modified_deductible_reduction)
-		if drivy_fee_diff > 0
-			drivy_action.type = 'debit'
-			drivy_action.amount = drivy_fee_diff
-		else
-			drivy_action.type = 'credit'
-			drivy_action.amount = drivy_fee_diff.abs
-		end
+		drivy_action = Action.new('drivy', drivy_fee_diff)
 
 		output['rental_modifications'] << {'id' => modification['id'], 'rental_id' => rid, 'actions' => [
 			{"who" => driver_action.actor, 		'type' => driver_action.type, 	'amount' => driver_action.amount},

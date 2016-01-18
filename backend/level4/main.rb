@@ -83,6 +83,13 @@ class Rental
 		commission - (insurance_fee + assistance_fee)
 	end
 
+	def calculate_fees
+		insurance_fee = calculate_insurance_fee
+		assistance_fee = calculate_assistance_fee
+		drivy_fee = calculate_drivy_fee
+		return insurance_fee, assistance_fee, drivy_fee
+	end
+
 	def calculate_deductible_reduction
 		number_of_days = calculate_number_of_days
 		@options['deductible_reduction'] ? number_of_days * 400 : 0
@@ -137,9 +144,7 @@ def level_4
 	read_rentals.each_pair do |rid, rental|
 		price = rental.calculate_price
 		commission = rental.calculate_commission
-		insurance_fee = rental.calculate_insurance_fee
-		assistance_fee = rental.calculate_assistance_fee
-		drivy_fee = rental.calculate_drivy_fee
+		insurance_fee, assistance_fee, drivy_fee = rental.calculate_fees
 		deductible_reduction = rental.calculate_deductible_reduction
 		output['rentals'] << {'id' => rid,
 							  'price' => price,

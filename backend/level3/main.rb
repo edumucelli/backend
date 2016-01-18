@@ -79,6 +79,13 @@ class Rental
 		assistance_fee = calculate_assistance_fee
 		commission - (insurance_fee + assistance_fee)
 	end
+
+	def calculate_fees
+		insurance_fee = calculate_insurance_fee
+		assistance_fee = calculate_assistance_fee
+		drivy_fee = calculate_drivy_fee
+		return insurance_fee, assistance_fee, drivy_fee
+	end
 end
 
 def read_rentals
@@ -128,9 +135,7 @@ def level_3
 	read_rentals.each_pair do |rid, rental|
 		price = rental.calculate_price
 		commission = rental.calculate_commission
-		insurance_fee = rental.calculate_insurance_fee
-		assistance_fee = rental.calculate_assistance_fee
-		drivy_fee = rental.calculate_drivy_fee
+		insurance_fee, assistance_fee, drivy_fee = rental.calculate_fees
 		output['rentals'] << {'id' => rid, 'price' => price, 'commission' => {'insurance_fee' => insurance_fee,
 													 	 					 'assistance_fee' => assistance_fee,
 														 	 				 'drivy_fee' => drivy_fee }}
